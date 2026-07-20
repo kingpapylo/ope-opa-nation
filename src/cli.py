@@ -158,6 +158,9 @@ def print_help() -> None:
             "  [cyan]/forget <key>[/cyan]         Delete a memory\n"
             "  [cyan]/history[/cyan]              Show this session's chat history\n"
             "  [cyan]/export[/cyan]               Export chat as markdown file\n"
+            "  [cyan]/cd <path>[/cyan]            Change directory\n"
+            "  [cyan]/pwd[/cyan]                  Show current directory\n"
+            "  [cyan]/ls[/cyan]                   List files in current directory\n"
             "  [cyan]/quit[/cyan]                 Exit the agent\n\n"
             "[dim]Just type naturally to chat with the agent.[/dim]",
             title=title,
@@ -242,7 +245,13 @@ def run_chat(agent: Agent) -> None:
 
     while True:
         try:
-            user_input = Prompt.ask("[bold green]🧑 You[/bold green]")
+            from .tools.navigator import get_cwd
+            import os
+            cwd = get_cwd()
+            # Show shortened path
+            home = str(Path.home())
+            display_cwd = cwd.replace(home, "~") if cwd.startswith(home) else cwd
+            user_input = Prompt.ask(f"[bold green]🧑 You[/bold green] [dim]{display_cwd}[/dim]")
         except (KeyboardInterrupt, EOFError):
             bye = rainbow_text("✦  Goodbye from OPE-OPA-NATION!  ✦")
             console.print()
@@ -383,6 +392,22 @@ def _handle_command(command: str, agent: Agent) -> None:
     elif cmd == "/export":
         path = export_markdown(agent)
         console.print(f"[green]Chat exported to:[/green] {path}")
+
+    elif cmd == "/cd":
+        if not arg:
+            console.print("[red]Usage:[/red] /cd <path>")
+        else:
+            from .tools import navigator
+            result = navigator.cd(arg)
+            console.print(f"[cyan]{result}[/cyan]")
+
+    elif cmd == "/pwd":
+        from .tools import navigator
+        console.print(f"[cyan]{navigator.pwd()}[/cyan]")
+
+    elif cmd == "/ls":
+        from .tools import navigator
+        console.print(navigator.ls(arg))
 
     else:
         console.print(f"[red]Unknown command:[/red] {cmd}  (type [cyan]/help[/cyan] for help)")

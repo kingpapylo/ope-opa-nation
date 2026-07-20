@@ -8,6 +8,7 @@ from openai import OpenAI
 from .config import load_config, get_api_key
 from .tools import shell, files, search, codesearch
 from .tools import memory, phone, devtools, webtools, utils
+from .tools import android, navigator
 
 # ── All tool definitions ──────────────────────────────────────────────────────
 TOOL_DEFINITIONS = [
@@ -25,6 +26,10 @@ TOOL_DEFINITIONS = [
     memory.FORGET_DEFINITION,
     # Phone (Termux)
     *phone.ALL_DEFINITIONS,
+    # Android UI navigation
+    *android.ALL_DEFINITIONS,
+    # Terminal/filesystem navigation
+    *navigator.ALL_DEFINITIONS,
     # Developer tools
     devtools.GIT_DEFINITION,
     devtools.SCRIPT_RUN_DEFINITION,
@@ -82,6 +87,57 @@ def dispatch_tool(name: str, args: dict) -> str:
         return phone.notify(args["title"], args["message"])
     elif name == "phone_location":
         return phone.location(args.get("provider", "network"))
+
+    # ── Android UI navigation ─────────────────────────────────────────────────
+    elif name == "android_open_app":
+        return android.open_app(args["app"])
+    elif name == "android_tap":
+        return android.tap(args["x"], args["y"])
+    elif name == "android_long_press":
+        return android.long_press(args["x"], args["y"], args.get("duration_ms", 1000))
+    elif name == "android_swipe":
+        return android.swipe(args["x1"], args["y1"], args["x2"], args["y2"], args.get("duration_ms", 300))
+    elif name == "android_key":
+        return android.key(args["key"])
+    elif name == "android_screenshot":
+        return android.screenshot(args.get("output_path", "/sdcard/screenshot.png"))
+    elif name == "android_clipboard_read":
+        return android.clipboard_read()
+    elif name == "android_clipboard_write":
+        return android.clipboard_write(args["text"])
+    elif name == "android_type_text":
+        return android.type_text(args["text"])
+    elif name == "android_screen_info":
+        return android.screen_info()
+    elif name == "android_torch":
+        return android.torch(args["on"])
+    elif name == "android_vibrate":
+        return android.vibrate(args.get("duration_ms", 500))
+    elif name == "android_speak":
+        return android.speak(args["text"], args.get("rate", 1.0))
+    elif name == "android_list_apps":
+        return android.list_apps(args.get("filter", ""))
+
+    # ── Terminal/filesystem navigation ────────────────────────────────────────
+    elif name == "nav_cd":
+        return navigator.cd(args["path"])
+    elif name == "nav_pwd":
+        return navigator.pwd()
+    elif name == "nav_ls":
+        return navigator.ls(args.get("path", ""), args.get("show_hidden", False))
+    elif name == "nav_tree":
+        return navigator.tree(args.get("path", ""), args.get("depth", 3))
+    elif name == "nav_find":
+        return navigator.find(
+            args["pattern"], args.get("path", ""),
+            args.get("type", "any"), args.get("max_results", 30),
+        )
+    elif name == "nav_bookmark":
+        return navigator.bookmark(args["action"], args.get("name", ""), args.get("path", ""))
+    elif name == "nav_history":
+        return navigator.history()
+    elif name == "nav_disk_usage":
+        return navigator.disk_usage(args.get("path", ""), args.get("depth", 1))
 
     # ── Developer tools ───────────────────────────────────────────────────────
     elif name == "git_run":
