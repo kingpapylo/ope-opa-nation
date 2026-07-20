@@ -15,8 +15,9 @@ dependencies = [
 [project.scripts]
 # Primary command
 ope-opa-nation = "src.cli:main"
-# Short alias
+# Short aliases
 oon = "src.cli:main"
+opa = "src.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

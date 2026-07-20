@@ -188,11 +188,13 @@ EOF
 
     chmod +x "$BIN_DIR/ope-opa-nation"
 
-    # Short alias: oon
+    # Short aliases: oon and opa
     cp "$BIN_DIR/ope-opa-nation" "$BIN_DIR/oon"
     chmod +x "$BIN_DIR/oon"
+    cp "$BIN_DIR/ope-opa-nation" "$BIN_DIR/opa"
+    chmod +x "$BIN_DIR/opa"
 
-    success "Launchers created: ope-opa-nation  and  oon"
+    success "Launchers created: ope-opa-nation  |  oon  |  opa"
 }
 
 # ── Save project copy to phone storage (Termux only) ────────────────────────
@@ -271,8 +273,9 @@ print_done() {
     echo -e "  ${DIM}(add to ~/.bashrc to make it permanent)${RESET}"
     echo ""
     echo -e "${YELLOW}${BOLD}  Start OPE-OPA-NATION:${RESET}"
-    echo -e "  ${GREEN}${BOLD}ope-opa-nation${RESET}   ${DIM}# full command${RESET}"
+    echo -e "  ${GREEN}${BOLD}opa${RESET}              ${DIM}# quickest way to start${RESET}"
     echo -e "  ${GREEN}${BOLD}oon${RESET}              ${DIM}# short alias${RESET}"
+    echo -e "  ${GREEN}${BOLD}ope-opa-nation${RESET}   ${DIM}# full command${RESET}"
     echo ""
     echo -e "  ${DIM}If command not found, run:  source ~/.bashrc${RESET}"
     echo ""
