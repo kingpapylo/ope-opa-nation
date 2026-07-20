@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "ope-opa-nation"
+version = "1.0.0"
+description = "OPE-OPA-NATION — Rainbow AI-Powered Terminal Assistant"
+requires-python = ">=3.10"
+dependencies = [
+    "openai==1.35.3",
+    "rich==13.7.1",
+]
+
+[project.scripts]
+# Primary command
+ope-opa-nation = "src.cli:main"
+# Short alias
+oon = "src.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
