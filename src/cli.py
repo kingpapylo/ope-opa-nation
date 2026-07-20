@@ -23,7 +23,7 @@ from .agent import Agent
 from .config import load_config, save_config, set_api_key, get_api_key
 from .tools import memory as mem_tool
 
-console = Console()
+console = Console(force_terminal=True, force_interactive=True)
 
 # History saved to ~/.ope-opa-nation/history/
 HISTORY_DIR = Path.home() / ".ope-opa-nation" / "history"
