@@ -148,21 +148,36 @@ def print_help() -> None:
     console.print(
         Panel(
             "[bold]Commands:[/bold]\n\n"
-            "  [cyan]/help[/cyan]             Show this help message\n"
-            "  [cyan]/clear[/cyan]            Clear conversation history\n"
-            "  [cyan]/model <name>[/cyan]     Switch model (e.g. gpt-4o, gpt-4-turbo)\n"
-            "  [cyan]/memory[/cyan]           Show everything in memory\n"
-            "  [cyan]/memory <key>[/cyan]     Look up a specific memory\n"
-            "  [cyan]/forget <key>[/cyan]     Delete a memory\n"
-            "  [cyan]/history[/cyan]          Show chat history for this session\n"
-            "  [cyan]/export[/cyan]           Export chat history as markdown file\n"
-            "  [cyan]/quit[/cyan]             Exit the agent\n\n"
+            "  [cyan]/help[/cyan]                Show this help message\n"
+            "  [cyan]/clear[/cyan]               Clear conversation history\n"
+            "  [cyan]/model <name>[/cyan]         Switch AI model\n"
+            "  [cyan]/provider <name>[/cyan]      Switch AI provider\n"
+            "  [cyan]/providers[/cyan]            List all available providers & models\n"
+            "  [cyan]/memory[/cyan]               Show all remembered facts\n"
+            "  [cyan]/memory <key>[/cyan]         Look up a specific memory\n"
+            "  [cyan]/forget <key>[/cyan]         Delete a memory\n"
+            "  [cyan]/history[/cyan]              Show this session's chat history\n"
+            "  [cyan]/export[/cyan]               Export chat as markdown file\n"
+            "  [cyan]/quit[/cyan]                 Exit the agent\n\n"
             "[dim]Just type naturally to chat with the agent.[/dim]",
             title=title,
             border_style="yellow",
             padding=(1, 2),
         )
     )
+
+
+def print_providers() -> None:
+    """Print all available providers and their models."""
+    from .agent import PROVIDERS
+    title = rainbow_text("🌐  Available Providers  🌐")
+    lines = ""
+    for name, info in PROVIDERS.items():
+        models = "  |  ".join(info["models"][:3])
+        lines += f"\n  [bold cyan]{name}[/bold cyan]  —  {info['label']}\n"
+        lines += f"  [dim]Models: {models}[/dim]\n"
+        lines += f"  [dim]Key: {info['signup_url']}[/dim]\n"
+    console.print(Panel(lines.strip(), title=title, border_style="cyan", padding=(1, 2)))
 
 
 def save_history(agent: Agent) -> Path:
@@ -309,11 +324,47 @@ def _handle_command(command: str, agent: Agent) -> None:
 
     elif cmd == "/model":
         if not arg:
-            console.print(f"[dim]Current model: {agent.config['model']}[/dim]")
+            console.print(f"[dim]Current model: {agent.config['model']}  |  provider: {agent.config['provider']}[/dim]")
         else:
             agent.config["model"] = arg
             save_config(agent.config)
             console.print(f"[green]Model switched to:[/green] {arg}")
+
+    elif cmd == "/providers":
+        print_providers()
+
+    elif cmd == "/provider":
+        from .agent import PROVIDERS, get_provider_info
+        if not arg:
+            current = agent.config["provider"]
+            info = get_provider_info(current)
+            console.print(f"[dim]Current provider: [bold]{current}[/bold] — {info['label']}[/dim]")
+            console.print(f"[dim]Current model: {agent.config['model']}[/dim]")
+            console.print("[dim]Use /providers to see all options[/dim]")
+        elif arg not in PROVIDERS:
+            console.print(f"[red]Unknown provider:[/red] {arg}")
+            console.print(f"[dim]Available: {', '.join(PROVIDERS.keys())}[/dim]")
+        else:
+            info = get_provider_info(arg)
+            agent.config["provider"] = arg
+            agent.config["model"] = info["default_model"]
+            save_config(agent.config)
+            console.print(f"[green]Switched to:[/green] [bold]{arg}[/bold] — {info['label']}")
+            console.print(f"[green]Default model:[/green] {info['default_model']}")
+            if info["env_var"]:
+                from .config import get_api_key
+                if not get_api_key(arg):
+                    console.print(f"\n[yellow]⚠️  No API key set for {arg}[/yellow]")
+                    console.print(f"[dim]Get one at: {info['signup_url']}[/dim]")
+                    console.print(f"[dim]Then run: /quit  →  opa config set-key <key> --provider {arg}[/dim]")
+            # Reinitialize agent with new provider
+            try:
+                new_agent = Agent(on_tool_call=agent.on_tool_call)
+                agent.messages = new_agent.messages
+                agent.client = new_agent.client
+                console.print(f"[green]✓ Agent restarted with {arg}[/green]")
+            except ValueError as e:
+                console.print(f"[red]{e}[/red]")
 
     elif cmd == "/memory":
         result = mem_tool.recall(arg)
@@ -383,30 +434,50 @@ def main() -> None:
         agent = Agent()
     except ValueError:
         # No API key — run setup wizard
+        from .agent import PROVIDERS
         console.print()
         console.print(Panel(
             "[bold yellow]No API key found![/bold yellow]\n\n"
-            "OPE-OPA-NATION uses [bold cyan]Groq[/bold cyan] — it's [bold green]FREE[/bold green] and fast!\n\n"
-            "Get your free key at: [cyan]https://console.groq.com/keys[/cyan]\n\n"
-            "  1. Sign up at console.groq.com\n"
-            "  2. Go to [bold]API Keys[/bold]\n"
-            "  3. Click [bold]Create API Key[/bold]\n"
-            "  4. Copy and paste it below",
-            title=rainbow_text("🔑  First Time Setup  —  Free Groq API Key"),
+            "Choose a provider and get a free key:\n\n"
+            "  [bold cyan]1. Groq[/bold cyan]        [green](FREE + fastest)[/green]  →  console.groq.com/keys\n"
+            "  [bold cyan]2. OpenRouter[/bold cyan]  [green](FREE models)[/green]    →  openrouter.ai/keys\n"
+            "  [bold cyan]3. Together[/bold cyan]    [green](FREE trial)[/green]     →  api.together.ai\n"
+            "  [bold cyan]4. OpenAI[/bold cyan]      (paid)            →  platform.openai.com/api-keys\n"
+            "  [bold cyan]5. Ollama[/bold cyan]      [green](LOCAL/offline)[/green]  →  ollama.com\n\n"
+            "[dim]Recommended: Groq — free, no card needed, very fast[/dim]",
+            title=rainbow_text("🔑  First Time Setup"),
             border_style="yellow",
             padding=(1, 2),
         ))
         console.print()
         try:
-            key = Prompt.ask("[bold yellow]Paste your Groq API key[/bold yellow] (gsk_...)")
-            key = key.strip()
-            if not key:
-                console.print("[red]No key entered.[/red]")
-                sys.exit(1)
-            from .config import set_api_key
-            set_api_key("groq", key)
-            console.print("[green]✓ Groq API key saved![/green] Starting OPE-OPA-NATION...\n")
-            agent = Agent()
+            provider_choice = Prompt.ask(
+                "[bold yellow]Which provider?[/bold yellow]",
+                choices=["groq", "openrouter", "together", "openai", "anthropic", "ollama"],
+                default="groq",
+            )
+
+            if provider_choice == "ollama":
+                # Ollama needs no key
+                agent.config["provider"] = "ollama"
+                agent.config["model"] = PROVIDERS["ollama"]["default_model"]
+                save_config(agent.config)
+                console.print("[green]✓ Ollama selected![/green] Make sure Ollama is running: [cyan]ollama serve[/cyan]")
+                agent = Agent()
+            else:
+                info = PROVIDERS[provider_choice]
+                key = Prompt.ask(f"[bold yellow]Paste your {provider_choice} API key[/bold yellow]")
+                key = key.strip()
+                if not key:
+                    console.print("[red]No key entered.[/red]")
+                    sys.exit(1)
+                from .config import set_api_key
+                set_api_key(provider_choice, key)
+                agent.config["provider"] = provider_choice
+                agent.config["model"] = info["default_model"]
+                save_config(agent.config)
+                console.print(f"[green]✓ {provider_choice} key saved![/green] Starting OPE-OPA-NATION...\n")
+                agent = Agent()
         except (KeyboardInterrupt, EOFError):
             console.print("\n[dim]Cancelled.[/dim]")
             sys.exit(0)

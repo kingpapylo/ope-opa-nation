@@ -121,30 +121,120 @@ def dispatch_tool(name: str, args: dict) -> str:
         return f"Unknown tool: {name}"
 
 
+# ── Provider registry ────────────────────────────────────────────────────────
+# Each entry: base_url, default_model, env_var, signup_url
+PROVIDERS = {
+    "groq": {
+        "base_url":      "https://api.groq.com/openai/v1",
+        "default_model": "llama-3.3-70b-versatile",
+        "env_var":       "GROQ_API_KEY",
+        "signup_url":    "https://console.groq.com/keys",
+        "label":         "Groq (FREE ⚡ fast)",
+        "models": [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768",
+            "gemma2-9b-it",
+        ],
+    },
+    "openai": {
+        "base_url":      None,
+        "default_model": "gpt-4o",
+        "env_var":       "OPENAI_API_KEY",
+        "signup_url":    "https://platform.openai.com/api-keys",
+        "label":         "OpenAI (GPT-4o)",
+        "models": [
+            "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+        ],
+    },
+    "anthropic": {
+        "base_url":      "https://api.anthropic.com/v1",
+        "default_model": "claude-3-5-sonnet-20241022",
+        "env_var":       "ANTHROPIC_API_KEY",
+        "signup_url":    "https://console.anthropic.com/",
+        "label":         "Anthropic (Claude)",
+        "models": [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-5-haiku-20241022",
+            "claude-3-opus-20240229",
+        ],
+    },
+    "together": {
+        "base_url":      "https://api.together.xyz/v1",
+        "default_model": "meta-llama/Llama-3-70b-chat-hf",
+        "env_var":       "TOGETHER_API_KEY",
+        "signup_url":    "https://api.together.ai/",
+        "label":         "Together AI (FREE trial)",
+        "models": [
+            "meta-llama/Llama-3-70b-chat-hf",
+            "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "google/gemma-2-27b-it",
+        ],
+    },
+    "openrouter": {
+        "base_url":      "https://openrouter.ai/api/v1",
+        "default_model": "mistralai/mistral-7b-instruct:free",
+        "env_var":       "OPENROUTER_API_KEY",
+        "signup_url":    "https://openrouter.ai/keys",
+        "label":         "OpenRouter (FREE models available)",
+        "models": [
+            "mistralai/mistral-7b-instruct:free",
+            "google/gemma-2-9b-it:free",
+            "meta-llama/llama-3.1-8b-instruct:free",
+            "microsoft/phi-3-mini-128k-instruct:free",
+        ],
+    },
+    "ollama": {
+        "base_url":      "http://localhost:11434/v1",
+        "default_model": "llama3",
+        "env_var":       None,
+        "signup_url":    "https://ollama.com",
+        "label":         "Ollama (LOCAL — runs on your device)",
+        "models": [
+            "llama3",
+            "mistral",
+            "phi3",
+            "gemma2",
+            "codellama",
+        ],
+    },
+}
+
+
+def get_provider_info(provider: str) -> dict:
+    return PROVIDERS.get(provider, PROVIDERS["groq"])
+
+
 class Agent:
     """
     Stateful AI agent with tool-use loop.
-
-    Usage:
-        agent = Agent()
-        reply = agent.chat("What is my battery level?")
+    Supports: Groq, OpenAI, Anthropic, Together, OpenRouter, Ollama.
     """
 
     def __init__(self, on_tool_call: Callable[[str, dict], None] | None = None):
         self.config = load_config()
         self.on_tool_call = on_tool_call
+        provider = self.config["provider"]
+        info = get_provider_info(provider)
 
-        api_key = get_api_key(self.config["provider"])
-        if not api_key:
-            raise ValueError(
-                f"No API key found for provider '{self.config['provider']}'. "
-                "Set OPENAI_API_KEY in your environment, "
-                "or run: ope-opa-nation config set-key <your-key>"
-            )
+        # Ollama doesn't need an API key
+        if info["env_var"] is None:
+            api_key = "ollama"
+        else:
+            api_key = get_api_key(provider)
+            if not api_key:
+                raise ValueError(
+                    f"No API key found for provider '{provider}'.\n"
+                    f"Get a free key at: {info['signup_url']}\n"
+                    f"Then run: ope-opa-nation config set-key <your-key> --provider {provider}"
+                )
 
         self.client = OpenAI(
             api_key=api_key,
-            base_url="https://api.groq.com/openai/v1" if self.config["provider"] == "groq" else None,
+            base_url=info["base_url"],
         )
 
         # Inject saved memories into the system prompt
