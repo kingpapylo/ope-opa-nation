@@ -84,7 +84,8 @@ install_system_deps() {
 
     if [[ "$ENV_TYPE" == "termux" ]]; then
         info "Updating Termux packages..."
-        pkg update -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || pkg update -y
+        # Allow mirror sync errors (exit 100) — they are non-fatal
+        pkg update -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || true
         pkg install -y python git curl 2>/dev/null || true
         success "Termux packages ready"
 
