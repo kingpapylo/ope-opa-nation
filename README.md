@@ -30,7 +30,7 @@ Chat naturally, run shell commands, read/write files, search the web, search you
 Open Termux and paste:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/ope-opa-nation/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kingpapylo/ope-opa-nation/main/install.sh | bash
 ```
 
 > If you haven't pushed to GitHub yet, copy the project folder to your phone and run:
@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/ope-opa-nation/main/i
 ### Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/ope-opa-nation/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/kingpapylo/ope-opa-nation/main/install.sh | bash
 ```
 
 Or if you already have the files:

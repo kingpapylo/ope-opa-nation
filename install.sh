@@ -121,12 +121,7 @@ install_project() {
         success "Files copied to $INSTALL_DIR"
     else
         # Not inside the project — clone from GitHub
-        REPO_URL="${OON_REPO:-https://github.com/YOUR_USERNAME/ope-opa-nation.git}"
-        if [[ "$REPO_URL" == *"YOUR_USERNAME"* ]]; then
-            error "Set OON_REPO env var to your GitHub URL before running this, e.g.:"
-            error "  OON_REPO=https://github.com/you/ope-opa-nation.git bash install.sh"
-            exit 1
-        fi
+        REPO_URL="${OON_REPO:-https://github.com/kingpapylo/ope-opa-nation.git}"
         info "Cloning from $REPO_URL..."
         git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
         success "Cloned to $INSTALL_DIR"
