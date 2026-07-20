@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "OPE-OPA-NATION — Rainbow AI-Powered Terminal Assistant"
 requires-python = ">=3.10"
 dependencies = [
-    "openai==1.35.3",
+    "openai==1.57.0",
     "groq==0.9.0",
     "rich==13.7.1",
 ]
