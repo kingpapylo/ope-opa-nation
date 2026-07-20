@@ -378,17 +378,39 @@ def main() -> None:
         _handle_config_command(args)
         return
 
-    # Initialize agent
+    # Initialize agent — with setup wizard if no API key found
     try:
         agent = Agent()
-    except ValueError as e:
-        console.print(f"[red]Setup error:[/red] {e}")
-        sys.exit(1)
+    except ValueError:
+        # No API key — run setup wizard
+        console.print()
+        console.print(Panel(
+            "[bold yellow]No API key found![/bold yellow]\n\n"
+            "OPE-OPA-NATION needs an OpenAI API key to work.\n\n"
+            "Get one free at: [cyan]https://platform.openai.com/api-keys[/cyan]\n\n"
+            "Then come back and enter it below.",
+            title=rainbow_text("🔑  First Time Setup"),
+            border_style="yellow",
+            padding=(1, 2),
+        ))
+        console.print()
+        try:
+            key = Prompt.ask("[bold yellow]Paste your OpenAI API key[/bold yellow] (sk-...)")
+            key = key.strip()
+            if not key.startswith("sk-"):
+                console.print("[red]That doesn't look like a valid key (should start with sk-)[/red]")
+                sys.exit(1)
+            from .config import set_api_key
+            set_api_key("openai", key)
+            console.print("[green]✓ API key saved![/green] Starting OPE-OPA-NATION...\n")
+            agent = Agent()
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[dim]Cancelled.[/dim]")
+            sys.exit(0)
 
     if args.command == "run":
         # One-shot mode
         query = " ".join(args.query)
-        tool_calls_made: list[str] = []
 
         def on_tool_call(name: str, args_: dict) -> None:
             console.print(f"  {format_tool_call(name, args_)}", highlight=False)
