@@ -49,8 +49,8 @@ CONFIG_DIR  = get_config_dir()
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
 DEFAULTS: dict = {
-    "model": "gpt-4o",
-    "provider": "openai",       # openai | anthropic
+    "model": "llama-3.3-70b-versatile",   # fast free Groq model
+    "provider": "groq",
     "max_tokens": 4096,
     "storage_root": str(get_storage_root()),
     "system_prompt": (
@@ -91,6 +91,7 @@ def get_api_key(provider: str) -> str | None:
     env_vars = {
         "openai":    "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
+        "groq":      "GROQ_API_KEY",
     }
     env_key = env_vars.get(provider)
     if env_key:

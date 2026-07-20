@@ -151,7 +151,7 @@ install_python_deps() {
     if [[ "$ENV_TYPE" == "termux" ]]; then
         # Termux: install directly — do NOT upgrade pip (breaks termux python-pip package)
         info "Installing with pip (Termux mode — no venv)..."
-        "$PIP" install openai==1.35.3 rich==13.7.1 --quiet
+        "$PIP" install openai==1.35.3 groq==0.9.0 rich==13.7.1 --quiet
         success "Python packages installed"
 
     else
@@ -164,7 +164,7 @@ install_python_deps() {
 
         info "Installing with pip (venv mode)..."
         "$VENV_PIP" install --upgrade pip --quiet
-        "$VENV_PIP" install openai==1.35.3 rich==13.7.1 --quiet
+        "$VENV_PIP" install openai==1.35.3 groq==0.9.0 rich==13.7.1 --quiet
         success "Python packages installed in venv"
     fi
 }

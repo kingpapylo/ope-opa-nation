@@ -142,7 +142,10 @@ class Agent:
                 "or run: ope-opa-nation config set-key <your-key>"
             )
 
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.groq.com/openai/v1" if self.config["provider"] == "groq" else None,
+        )
 
         # Inject saved memories into the system prompt
         saved = memory.load_all()

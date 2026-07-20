@@ -358,10 +358,10 @@ def build_parser() -> argparse.ArgumentParser:
     config_sub.add_parser("show", help="Show current config")
 
     key_parser = config_sub.add_parser("set-key", help="Set API key")
-    key_parser.add_argument("key", help="Your OpenAI API key (sk-...)")
+    key_parser.add_argument("key", help="Your Groq API key (gsk_...)")
     key_parser.add_argument(
-        "--provider", default="openai", choices=["openai", "anthropic"],
-        help="Provider to set key for (default: openai)"
+        "--provider", default="groq", choices=["groq", "openai", "anthropic"],
+        help="Provider to set key for (default: groq)"
     )
 
     model_parser = config_sub.add_parser("set-model", help="Set default model")
@@ -386,23 +386,26 @@ def main() -> None:
         console.print()
         console.print(Panel(
             "[bold yellow]No API key found![/bold yellow]\n\n"
-            "OPE-OPA-NATION needs an OpenAI API key to work.\n\n"
-            "Get one free at: [cyan]https://platform.openai.com/api-keys[/cyan]\n\n"
-            "Then come back and enter it below.",
-            title=rainbow_text("🔑  First Time Setup"),
+            "OPE-OPA-NATION uses [bold cyan]Groq[/bold cyan] — it's [bold green]FREE[/bold green] and fast!\n\n"
+            "Get your free key at: [cyan]https://console.groq.com/keys[/cyan]\n\n"
+            "  1. Sign up at console.groq.com\n"
+            "  2. Go to [bold]API Keys[/bold]\n"
+            "  3. Click [bold]Create API Key[/bold]\n"
+            "  4. Copy and paste it below",
+            title=rainbow_text("🔑  First Time Setup  —  Free Groq API Key"),
             border_style="yellow",
             padding=(1, 2),
         ))
         console.print()
         try:
-            key = Prompt.ask("[bold yellow]Paste your OpenAI API key[/bold yellow] (sk-...)")
+            key = Prompt.ask("[bold yellow]Paste your Groq API key[/bold yellow] (gsk_...)")
             key = key.strip()
-            if not key.startswith("sk-"):
-                console.print("[red]That doesn't look like a valid key (should start with sk-)[/red]")
+            if not key:
+                console.print("[red]No key entered.[/red]")
                 sys.exit(1)
             from .config import set_api_key
-            set_api_key("openai", key)
-            console.print("[green]✓ API key saved![/green] Starting OPE-OPA-NATION...\n")
+            set_api_key("groq", key)
+            console.print("[green]✓ Groq API key saved![/green] Starting OPE-OPA-NATION...\n")
             agent = Agent()
         except (KeyboardInterrupt, EOFError):
             console.print("\n[dim]Cancelled.[/dim]")
