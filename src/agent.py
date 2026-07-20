@@ -237,11 +237,11 @@ PROVIDERS = {
         "signup_url":    "https://openrouter.ai/keys",
         "label":         "OpenRouter (FREE models available)",
         "models": [
-            "tencent/hunyuan-a13b-instruct:free",
             "mistralai/mistral-7b-instruct:free",
             "google/gemma-2-9b-it:free",
             "meta-llama/llama-3.1-8b-instruct:free",
             "microsoft/phi-3-mini-128k-instruct:free",
+            "qwen/qwen-2-7b-instruct:free",
         ],
     },
     "ollama": {

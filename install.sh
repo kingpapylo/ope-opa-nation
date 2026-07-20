@@ -315,19 +315,19 @@ interactive_setup() {
             KEY_URL="https://openrouter.ai/keys"
             echo ""
             echo -e "  ${CYAN}${BOLD}Choose OpenRouter model:${RESET}"
-            echo -e "  ${CYAN}1.${RESET} tencent/hunyuan-a13b-instruct:free  ${GREEN}(recommended free)${RESET}"
-            echo -e "  ${CYAN}2.${RESET} mistralai/mistral-7b-instruct:free"
-            echo -e "  ${CYAN}3.${RESET} google/gemma-2-9b-it:free"
-            echo -e "  ${CYAN}4.${RESET} meta-llama/llama-3.1-8b-instruct:free"
-            echo -e "  ${CYAN}5.${RESET} microsoft/phi-3-mini-128k-instruct:free"
+            echo -e "  ${CYAN}1.${RESET} mistralai/mistral-7b-instruct:free      ${GREEN}(recommended)${RESET}"
+            echo -e "  ${CYAN}2.${RESET} google/gemma-2-9b-it:free"
+            echo -e "  ${CYAN}3.${RESET} meta-llama/llama-3.1-8b-instruct:free"
+            echo -e "  ${CYAN}4.${RESET} microsoft/phi-3-mini-128k-instruct:free"
+            echo -e "  ${CYAN}5.${RESET} qwen/qwen-2-7b-instruct:free"
             echo -ne "  ${BOLD}Enter choice [1-5] (default: 1):${RESET} "
             read -r model_choice
             case "${model_choice:-1}" in
-                2) MODEL="mistralai/mistral-7b-instruct:free" ;;
-                3) MODEL="google/gemma-2-9b-it:free" ;;
-                4) MODEL="meta-llama/llama-3.1-8b-instruct:free" ;;
-                5) MODEL="microsoft/phi-3-mini-128k-instruct:free" ;;
-                *) MODEL="tencent/hunyuan-a13b-instruct:free" ;;
+                2) MODEL="google/gemma-2-9b-it:free" ;;
+                3) MODEL="meta-llama/llama-3.1-8b-instruct:free" ;;
+                4) MODEL="microsoft/phi-3-mini-128k-instruct:free" ;;
+                5) MODEL="qwen/qwen-2-7b-instruct:free" ;;
+                *) MODEL="mistralai/mistral-7b-instruct:free" ;;
             esac
             ;;
         3)
