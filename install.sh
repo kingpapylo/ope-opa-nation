@@ -122,9 +122,24 @@ install_project() {
     else
         # Not inside the project — clone from GitHub
         REPO_URL="${OON_REPO:-https://github.com/kingpapylo/ope-opa-nation.git}"
-        info "Cloning from $REPO_URL..."
-        git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
-        success "Cloned to $INSTALL_DIR"
+        if [[ -d "$INSTALL_DIR/.git" ]]; then
+            # Already cloned — just pull latest
+            info "Updating existing installation at $INSTALL_DIR..."
+            git -C "$INSTALL_DIR" pull --ff-only 2>/dev/null \
+                || git -C "$INSTALL_DIR" fetch origin main \
+                && git -C "$INSTALL_DIR" reset --hard origin/main
+            success "Updated to latest version"
+        elif [[ -d "$INSTALL_DIR" ]]; then
+            # Directory exists but not a git repo — remove and reclone
+            info "Removing stale directory and cloning fresh..."
+            rm -rf "$INSTALL_DIR"
+            git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
+            success "Cloned to $INSTALL_DIR"
+        else
+            info "Cloning from $REPO_URL..."
+            git clone --depth=1 "$REPO_URL" "$INSTALL_DIR"
+            success "Cloned to $INSTALL_DIR"
+        fi
     fi
 }
 
