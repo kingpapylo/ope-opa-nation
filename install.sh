@@ -270,6 +270,86 @@ add_to_path() {
     export PATH="${BIN_DIR}:${PATH}"
 }
 
+# ── Interactive setup wizard ─────────────────────────────────────────────────
+interactive_setup() {
+    step "Setting up your AI provider and API key"
+
+    CONFIG_DIR="${HOME}/.ope-opa-nation"
+    CONFIG_FILE="${CONFIG_DIR}/config.json"
+    mkdir -p "$CONFIG_DIR"
+
+    echo ""
+    rainbow_echo "  Choose your AI provider:"
+    echo ""
+    echo -e "  ${CYAN}${BOLD}1. Groq${RESET}        ${GREEN}(FREE + fastest)${RESET}   →  console.groq.com/keys"
+    echo -e "  ${CYAN}${BOLD}2. OpenRouter${RESET}  ${GREEN}(FREE models)${RESET}     →  openrouter.ai/keys"
+    echo -e "  ${CYAN}${BOLD}3. Together${RESET}    ${GREEN}(FREE trial)${RESET}      →  api.together.ai"
+    echo -e "  ${CYAN}${BOLD}4. OpenAI${RESET}      ${YELLOW}(paid)${RESET}             →  platform.openai.com/api-keys"
+    echo -e "  ${CYAN}${BOLD}5. Ollama${RESET}      ${GREEN}(LOCAL/offline)${RESET}   →  ollama.com"
+    echo ""
+    echo -ne "  ${BOLD}Enter choice [1-5] (default: 1):${RESET} "
+    read -r provider_choice
+
+    # Default to groq
+    provider_choice="${provider_choice:-1}"
+
+    case "$provider_choice" in
+        1) PROVIDER="groq";        MODEL="llama-3.3-70b-versatile";              KEY_URL="https://console.groq.com/keys" ;;
+        2) PROVIDER="openrouter";  MODEL="mistralai/mistral-7b-instruct:free";   KEY_URL="https://openrouter.ai/keys" ;;
+        3) PROVIDER="together";    MODEL="meta-llama/Llama-3-70b-chat-hf";       KEY_URL="https://api.together.ai" ;;
+        4) PROVIDER="openai";      MODEL="gpt-4o";                               KEY_URL="https://platform.openai.com/api-keys" ;;
+        5) PROVIDER="ollama";      MODEL="llama3";                               KEY_URL="https://ollama.com" ;;
+        *) PROVIDER="groq";        MODEL="llama-3.3-70b-versatile";              KEY_URL="https://console.groq.com/keys" ;;
+    esac
+
+    echo ""
+    success "Provider: ${BOLD}${PROVIDER}${RESET}  |  Model: ${BOLD}${MODEL}${RESET}"
+    echo ""
+
+    # Ask for API key (skip for Ollama)
+    API_KEY=""
+    if [[ "$PROVIDER" != "ollama" ]]; then
+        echo -e "  ${YELLOW}${BOLD}Get your free API key at:${RESET}  ${CYAN}${KEY_URL}${RESET}"
+        echo ""
+        echo -ne "  ${BOLD}Paste your API key:${RESET} "
+        read -r API_KEY
+        API_KEY="$(echo "$API_KEY" | tr -d '[:space:]')"
+
+        if [[ -z "$API_KEY" ]]; then
+            warn "No API key entered — you can set it later by running: opa"
+        else
+            success "API key received!"
+        fi
+    fi
+
+    # Write config.json
+    cat > "$CONFIG_FILE" <<EOF
+{
+  "provider": "${PROVIDER}",
+  "model": "${MODEL}",
+  "max_tokens": 4096,
+  "storage_root": "${STORAGE_DIR:-$HOME/OPE-OPA-NATION}",
+  "system_prompt": "You are OPE-OPA-NATION, a rainbow AI-powered terminal assistant. You can run shell commands, read and write files, search the web, and help with coding tasks. Be concise and direct. When you run commands or edit files, always show what you are doing."
+}
+EOF
+
+    # Write API key to config
+    if [[ -n "$API_KEY" && "$PROVIDER" != "ollama" ]]; then
+        # Use Python to add the key to the JSON safely
+        "$PYTHON" - <<PYEOF
+import json
+with open("$CONFIG_FILE") as f:
+    cfg = json.load(f)
+cfg["${PROVIDER}_api_key"] = "$API_KEY"
+with open("$CONFIG_FILE", "w") as f:
+    json.dump(cfg, f, indent=2)
+PYEOF
+        success "Config saved to $CONFIG_FILE"
+    fi
+
+    echo ""
+}
+
 # ── Print final instructions ─────────────────────────────────────────────────
 print_done() {
     echo ""
@@ -283,11 +363,7 @@ print_done() {
     echo -e "${CYAN}  Phone storage: ${BOLD}${STORAGE_DIR}${RESET}"
     fi
     echo ""
-    echo -e "${YELLOW}${BOLD}  Set your OpenAI API key:${RESET}"
-    echo -e "  ${DIM}export OPENAI_API_KEY=\"sk-...\"${RESET}"
-    echo -e "  ${DIM}(add to ~/.bashrc to make it permanent)${RESET}"
-    echo ""
-    echo -e "${YELLOW}${BOLD}  Start OPE-OPA-NATION:${RESET}"
+    echo -e "${GREEN}${BOLD}  Start OPE-OPA-NATION now:${RESET}"
     echo -e "  ${GREEN}${BOLD}opa${RESET}              ${DIM}# quickest way to start${RESET}"
     echo -e "  ${GREEN}${BOLD}oon${RESET}              ${DIM}# short alias${RESET}"
     echo -e "  ${GREEN}${BOLD}ope-opa-nation${RESET}   ${DIM}# full command${RESET}"
@@ -309,6 +385,7 @@ main() {
     create_launcher
     save_to_phone_storage
     add_to_path
+    interactive_setup
     print_done
 }
 
