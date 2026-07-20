@@ -1,7 +1,10 @@
 """Rich CLI interface for OPE-OPA-NATION AI agent."""
 
 import sys
+import json
 import argparse
+from datetime import datetime
+from pathlib import Path
 from typing import NoReturn
 
 from rich.console import Console
@@ -13,12 +16,17 @@ from rich.spinner import Spinner
 from rich.live import Live
 from rich.text import Text
 from rich.align import Align
+from rich.table import Table
 from rich import print as rprint
 
 from .agent import Agent
 from .config import load_config, save_config, set_api_key, get_api_key
+from .tools import memory as mem_tool
 
 console = Console()
+
+# History saved to ~/.ope-opa-nation/history/
+HISTORY_DIR = Path.home() / ".ope-opa-nation" / "history"
 
 # Rainbow color cycle for text
 RAINBOW = ["red", "yellow", "green", "cyan", "blue", "magenta"]
@@ -140,16 +148,77 @@ def print_help() -> None:
     console.print(
         Panel(
             "[bold]Commands:[/bold]\n\n"
-            "  [cyan]/help[/cyan]          Show this help message\n"
-            "  [cyan]/clear[/cyan]         Clear conversation history\n"
-            "  [cyan]/model <name>[/cyan]  Switch model (e.g. gpt-4o, gpt-4-turbo)\n"
-            "  [cyan]/quit[/cyan]          Exit the agent\n\n"
+            "  [cyan]/help[/cyan]             Show this help message\n"
+            "  [cyan]/clear[/cyan]            Clear conversation history\n"
+            "  [cyan]/model <name>[/cyan]     Switch model (e.g. gpt-4o, gpt-4-turbo)\n"
+            "  [cyan]/memory[/cyan]           Show everything in memory\n"
+            "  [cyan]/memory <key>[/cyan]     Look up a specific memory\n"
+            "  [cyan]/forget <key>[/cyan]     Delete a memory\n"
+            "  [cyan]/history[/cyan]          Show chat history for this session\n"
+            "  [cyan]/export[/cyan]           Export chat history as markdown file\n"
+            "  [cyan]/quit[/cyan]             Exit the agent\n\n"
             "[dim]Just type naturally to chat with the agent.[/dim]",
             title=title,
             border_style="yellow",
             padding=(1, 2),
         )
     )
+
+
+def save_history(agent: Agent) -> Path:
+    """Save current session chat history to ~/.ope-opa-nation/history/<timestamp>.json"""
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = HISTORY_DIR / f"chat_{ts}.json"
+    history = agent.get_history()
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"saved_at": datetime.now().isoformat(), "messages": history}, f, indent=2, default=str)
+    return path
+
+
+def export_markdown(agent: Agent) -> Path:
+    """Export current session chat history as a markdown file."""
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    path = HISTORY_DIR / f"chat_{ts}.md"
+    history = agent.get_history()
+
+    lines = [
+        "# OPE-OPA-NATION Chat Export",
+        f"*Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
+        "",
+    ]
+    for msg in history:
+        role = msg.get("role", "")
+        content = msg.get("content", "")
+        if not content or role == "tool":
+            continue
+        if role == "user":
+            lines += [f"## 🧑 You", "", str(content), ""]
+        elif role == "assistant":
+            lines += [f"## 🌈 OPE-OPA-NATION", "", str(content), ""]
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    return path
+
+
+def show_history(agent: Agent) -> None:
+    """Print a summary of the current session's conversation."""
+    history = agent.get_history()
+    msgs = [m for m in history if isinstance(m, dict) and m.get("role") in ("user", "assistant") and m.get("content")]
+    if not msgs:
+        console.print("[dim]No conversation history yet.[/dim]")
+        return
+    console.print(f"\n[bold]Session history[/bold]  [dim]({len(msgs)} messages)[/dim]\n")
+    for i, msg in enumerate(msgs, 1):
+        role = msg["role"]
+        content = str(msg["content"])[:120].replace("\n", " ")
+        if role == "user":
+            console.print(f"  [green]{i}. 🧑 You:[/green] {content}")
+        else:
+            console.print(f"  [blue]{i}. 🌈 OPE:[/blue] {content}")
+    console.print()
 
 
 def run_chat(agent: Agent) -> None:
@@ -212,17 +281,29 @@ def _handle_command(command: str, agent: Agent) -> None:
     """Handle a /slash command."""
     parts = command.split(maxsplit=1)
     cmd = parts[0].lower()
-    arg = parts[1] if len(parts) > 1 else ""
+    arg = parts[1].strip() if len(parts) > 1 else ""
 
-    if cmd == "/quit" or cmd == "/exit":
-        console.print("[dim]Goodbye![/dim]")
+    if cmd in ("/quit", "/exit"):
+        history = agent.get_history()
+        if any(m.get("role") == "user" for m in history if isinstance(m, dict)):
+            path = save_history(agent)
+            console.print(f"[dim]Chat saved to {path}[/dim]")
+        bye = rainbow_text("✦  Goodbye from OPE-OPA-NATION!  ✦")
+        console.print()
+        console.print(bye, justify="center")
+        console.print()
         sys.exit(0)
 
     elif cmd == "/clear":
+        history = agent.get_history()
+        if any(m.get("role") == "user" for m in history if isinstance(m, dict)):
+            path = save_history(agent)
+            console.print(f"[dim]Chat saved to {path}[/dim]")
         agent.reset()
         console.clear()
         print_welcome()
         console.print("[dim]Conversation cleared.[/dim]\n")
+
     elif cmd == "/help":
         print_help()
 
@@ -233,6 +314,24 @@ def _handle_command(command: str, agent: Agent) -> None:
             agent.config["model"] = arg
             save_config(agent.config)
             console.print(f"[green]Model switched to:[/green] {arg}")
+
+    elif cmd == "/memory":
+        result = mem_tool.recall(arg)
+        console.print(Panel(result, title=rainbow_text("🧠 Memory"), border_style="cyan"))
+
+    elif cmd == "/forget":
+        if not arg:
+            console.print("[red]Usage:[/red] /forget <key>")
+        else:
+            result = mem_tool.forget(arg)
+            console.print(f"[dim]{result}[/dim]")
+
+    elif cmd == "/history":
+        show_history(agent)
+
+    elif cmd == "/export":
+        path = export_markdown(agent)
+        console.print(f"[green]Chat exported to:[/green] {path}")
 
     else:
         console.print(f"[red]Unknown command:[/red] {cmd}  (type [cyan]/help[/cyan] for help)")
