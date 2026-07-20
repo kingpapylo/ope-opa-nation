@@ -272,7 +272,7 @@ add_to_path() {
 
 # ── Interactive setup wizard ─────────────────────────────────────────────────
 interactive_setup() {
-    step "Setting up your AI provider and API key"
+    step "Setting up your AI provider, model and API key"
 
     CONFIG_DIR="${HOME}/.ope-opa-nation"
     CONFIG_FILE="${CONFIG_DIR}/config.json"
@@ -289,17 +289,106 @@ interactive_setup() {
     echo ""
     echo -ne "  ${BOLD}Enter choice [1-5] (default: 1):${RESET} "
     read -r provider_choice
-
-    # Default to groq
     provider_choice="${provider_choice:-1}"
 
     case "$provider_choice" in
-        1) PROVIDER="groq";        MODEL="llama-3.3-70b-versatile";              KEY_URL="https://console.groq.com/keys" ;;
-        2) PROVIDER="openrouter";  MODEL="mistralai/mistral-7b-instruct:free";   KEY_URL="https://openrouter.ai/keys" ;;
-        3) PROVIDER="together";    MODEL="meta-llama/Llama-3-70b-chat-hf";       KEY_URL="https://api.together.ai" ;;
-        4) PROVIDER="openai";      MODEL="gpt-4o";                               KEY_URL="https://platform.openai.com/api-keys" ;;
-        5) PROVIDER="ollama";      MODEL="llama3";                               KEY_URL="https://ollama.com" ;;
-        *) PROVIDER="groq";        MODEL="llama-3.3-70b-versatile";              KEY_URL="https://console.groq.com/keys" ;;
+        1)
+            PROVIDER="groq"
+            KEY_URL="https://console.groq.com/keys"
+            echo ""
+            echo -e "  ${CYAN}${BOLD}Choose Groq model:${RESET}"
+            echo -e "  ${CYAN}1.${RESET} llama-3.3-70b-versatile   ${GREEN}(recommended)${RESET}"
+            echo -e "  ${CYAN}2.${RESET} llama-3.1-8b-instant      ${GREEN}(fastest)${RESET}"
+            echo -e "  ${CYAN}3.${RESET} mixtral-8x7b-32768"
+            echo -e "  ${CYAN}4.${RESET} gemma2-9b-it"
+            echo -ne "  ${BOLD}Enter choice [1-4] (default: 1):${RESET} "
+            read -r model_choice
+            case "${model_choice:-1}" in
+                2) MODEL="llama-3.1-8b-instant" ;;
+                3) MODEL="mixtral-8x7b-32768" ;;
+                4) MODEL="gemma2-9b-it" ;;
+                *) MODEL="llama-3.3-70b-versatile" ;;
+            esac
+            ;;
+        2)
+            PROVIDER="openrouter"
+            KEY_URL="https://openrouter.ai/keys"
+            echo ""
+            echo -e "  ${CYAN}${BOLD}Choose OpenRouter model:${RESET}"
+            echo -e "  ${CYAN}1.${RESET} tencent/hunyuan-a13b-instruct:free  ${GREEN}(recommended free)${RESET}"
+            echo -e "  ${CYAN}2.${RESET} mistralai/mistral-7b-instruct:free"
+            echo -e "  ${CYAN}3.${RESET} google/gemma-2-9b-it:free"
+            echo -e "  ${CYAN}4.${RESET} meta-llama/llama-3.1-8b-instruct:free"
+            echo -e "  ${CYAN}5.${RESET} microsoft/phi-3-mini-128k-instruct:free"
+            echo -ne "  ${BOLD}Enter choice [1-5] (default: 1):${RESET} "
+            read -r model_choice
+            case "${model_choice:-1}" in
+                2) MODEL="mistralai/mistral-7b-instruct:free" ;;
+                3) MODEL="google/gemma-2-9b-it:free" ;;
+                4) MODEL="meta-llama/llama-3.1-8b-instruct:free" ;;
+                5) MODEL="microsoft/phi-3-mini-128k-instruct:free" ;;
+                *) MODEL="tencent/hunyuan-a13b-instruct:free" ;;
+            esac
+            ;;
+        3)
+            PROVIDER="together"
+            KEY_URL="https://api.together.ai"
+            echo ""
+            echo -e "  ${CYAN}${BOLD}Choose Together model:${RESET}"
+            echo -e "  ${CYAN}1.${RESET} meta-llama/Llama-3-70b-chat-hf  ${GREEN}(recommended)${RESET}"
+            echo -e "  ${CYAN}2.${RESET} mistralai/Mixtral-8x7B-Instruct-v0.1"
+            echo -e "  ${CYAN}3.${RESET} google/gemma-2-27b-it"
+            echo -ne "  ${BOLD}Enter choice [1-3] (default: 1):${RESET} "
+            read -r model_choice
+            case "${model_choice:-1}" in
+                2) MODEL="mistralai/Mixtral-8x7B-Instruct-v0.1" ;;
+                3) MODEL="google/gemma-2-27b-it" ;;
+                *) MODEL="meta-llama/Llama-3-70b-chat-hf" ;;
+            esac
+            ;;
+        4)
+            PROVIDER="openai"
+            KEY_URL="https://platform.openai.com/api-keys"
+            echo ""
+            echo -e "  ${CYAN}${BOLD}Choose OpenAI model:${RESET}"
+            echo -e "  ${CYAN}1.${RESET} gpt-4o           ${GREEN}(recommended)${RESET}"
+            echo -e "  ${CYAN}2.${RESET} gpt-4o-mini      ${GREEN}(cheaper)${RESET}"
+            echo -e "  ${CYAN}3.${RESET} gpt-4-turbo"
+            echo -e "  ${CYAN}4.${RESET} gpt-3.5-turbo    ${GREEN}(cheapest)${RESET}"
+            echo -ne "  ${BOLD}Enter choice [1-4] (default: 1):${RESET} "
+            read -r model_choice
+            case "${model_choice:-1}" in
+                2) MODEL="gpt-4o-mini" ;;
+                3) MODEL="gpt-4-turbo" ;;
+                4) MODEL="gpt-3.5-turbo" ;;
+                *) MODEL="gpt-4o" ;;
+            esac
+            ;;
+        5)
+            PROVIDER="ollama"
+            KEY_URL="https://ollama.com"
+            echo ""
+            echo -e "  ${CYAN}${BOLD}Choose Ollama model:${RESET}"
+            echo -e "  ${CYAN}1.${RESET} llama3    ${GREEN}(recommended)${RESET}"
+            echo -e "  ${CYAN}2.${RESET} mistral"
+            echo -e "  ${CYAN}3.${RESET} phi3"
+            echo -e "  ${CYAN}4.${RESET} gemma2"
+            echo -e "  ${CYAN}5.${RESET} codellama"
+            echo -ne "  ${BOLD}Enter choice [1-5] (default: 1):${RESET} "
+            read -r model_choice
+            case "${model_choice:-1}" in
+                2) MODEL="mistral" ;;
+                3) MODEL="phi3" ;;
+                4) MODEL="gemma2" ;;
+                5) MODEL="codellama" ;;
+                *) MODEL="llama3" ;;
+            esac
+            ;;
+        *)
+            PROVIDER="groq"
+            MODEL="llama-3.3-70b-versatile"
+            KEY_URL="https://console.groq.com/keys"
+            ;;
     esac
 
     echo ""
@@ -335,7 +424,6 @@ EOF
 
     # Write API key to config
     if [[ -n "$API_KEY" && "$PROVIDER" != "ollama" ]]; then
-        # Use Python to add the key to the JSON safely
         "$PYTHON" - <<PYEOF
 import json
 with open("$CONFIG_FILE") as f:
